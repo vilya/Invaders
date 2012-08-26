@@ -28,6 +28,11 @@ var TITLE_FONT_NAME = "Pixelate";
 var DIALOGUE_FONT_SIZE = 21;
 var DIALOGUE_FONT_NAME = "Pixelate";
 
+// Movement directions for the aliens.
+var ALIEN_MOVE_LEFT = 1;
+var ALIEN_MOVE_RIGHT = 2;
+var ALIEN_MOVE_DOWN = 3;
+
 
 //
 // Global variables
@@ -72,11 +77,20 @@ var game = {
   // Alien data.
   'numAliens': 0,
   'aliens': {
+    'cellWidth': 0,
+    'cellHeight': 0,
+    'numPerRow': 0,
+    'speed': 92.0,      // pixels per second
+    'minBombDT': 1000,   // min time, in milliseconds, between dropping two bombs.
+    'bombP': 0.5,       // probability of dropping a bomb on any given frame.
+    'states': [ ALIEN_MOVE_LEFT, ALIEN_MOVE_DOWN, ALIEN_MOVE_RIGHT, ALIEN_MOVE_DOWN ],
+    'state': 0,
     'size': [],
     'pos': [],
     'color': [],
     'shape': [],
     'isFriendly': [],
+    'lastBombT': 0,
   },
 
   // Barricade data.
@@ -86,19 +100,25 @@ var game = {
   // Bullets (fired by the player)
   'numBullets': 0,
   'maxBullets': 8,
-  'bulletSize': null,
-  'bulletColor': "#990000",
-  'bulletXOfs': 0,
-  'bulletYOfs': 0,
-  'bulletPos': [],
+  'bullets': {
+    'size': null,
+    'color': "#990000",
+    'speed': 128.0, // pixels per second
+    'xOfs': 0,
+    'yOfs': 0,
+    'pos': [],
+  },
 
   // Bombs (fired by the aliens)
   'numBombs': 0,
-  'bombSize': null,
-  'bombColor': "#999900",
-  'bombXOfs': 0,
-  'bombYOfs': 0,
-  'bombPos': [],
+  'bombs': {
+    'size': null,
+    'color': "#999900",
+    'speed': 128.0, // pixels per second
+    'xOfs': 0,
+    'yOfs': 0,
+    'pos': [],
+  },
 };
 
 
@@ -168,32 +188,34 @@ function enterNewGame()
   game.player.size = [ tw.width - 4, ICON_FONT_SIZE / 2 ];
 
   // Set up the aliens.
-  var aliensPerRow = 8;
-  var cellWidth = canvas.width / (aliensPerRow + 2);
-  var cellHeight = ICON_FONT_SIZE + 10;
   var shapes = "ABCDEFGH";
   var numRows = shapes.length;
 
+  game.aliens.numPerRow = 8;
+  game.aliens.cellWidth = canvas.width / (game.aliens.numPerRow + 2);
+  game.aliens.cellHeight = ICON_FONT_SIZE + 10;
   game.aliens.shape = [];
   game.aliens.size = [];
   game.aliens.pos = [];
   game.aliens.color = [];
   game.aliens.isFriendly = [];
+  game.aliens.lastBombT = game.lastT;
+  game.aliens.state = 0;
 
-  game.numAliens = numRows * aliensPerRow;
+  game.numAliens = numRows * game.aliens.numPerRow;
   y = (2 * canvas.height / 3);
   for (var row = 0; row < numRows; row++) {
     var shape = shapes[row];
     tw = ctx.measureText(shape);
-    var xOfs = (cellWidth - tw.width) / 2;
-    for (var i = 1; i <= aliensPerRow; i++) {
+    var xOfs = (game.aliens.cellWidth - tw.width) / 2;
+    for (var i = 1; i <= game.aliens.numPerRow; i++) {
       game.aliens.shape.push(shape);
       game.aliens.size.push([ tw.width, ICON_FONT_SIZE ]);
-      game.aliens.pos.push([ cellWidth * i + xOfs, y ]);
+      game.aliens.pos.push([ game.aliens.cellWidth * i + xOfs, y ]);
       game.aliens.color.push("#FFFFFF");
       game.aliens.isFriendly.push(false);
     }
-    y -= cellHeight;
+    y -= game.aliens.cellHeight;
   }
 
   ctx.font = ICON_FONT_SIZE + "px " + TITLE_FONT_NAME;
@@ -201,18 +223,18 @@ function enterNewGame()
   // Set up the bullets.
   tw = ctx.measureText('i');
   game.numBullets = 0;
-  game.bulletSize = [ tw.width * 0.5, ICON_FONT_SIZE * 0.33 ];
-  game.bulletXOfs = (game.player.size[0] - game.bulletSize[0]) / 2;
-  game.bulletYOfs = game.bulletSize[1] + game.player.size[1];
-  game.bulletPos = [];
+  game.bullets.size = [ tw.width * 0.5, ICON_FONT_SIZE * 0.33 ];
+  game.bullets.xOfs = (game.player.size[0] - game.bullets.size[0]) / 2;
+  game.bullets.yOfs = game.bullets.size[1] + game.player.size[1];
+  game.bullets.pos = [];
 
   // Set up the bombs.
   tw = ctx.measureText('o');
   game.numBombs = 0;
-  game.bombSize = [ tw.width, ICON_FONT_SIZE ];
-  game.bombXOfs = (game.player.size[0] - game.bombSize[0]) / 2;
-  game.bombYOfs = game.bombSize[1] / 2;
-  game.bombPos = [];
+  game.bombs.size = [ tw.width, ICON_FONT_SIZE ];
+  game.bombs.xOfs = (game.player.size[0] - game.bombs.size[0]) / 2;
+  game.bombs.yOfs = game.bombs.size[1] / 2;
+  game.bombs.pos = [];
 }
 
 
@@ -242,20 +264,10 @@ function updatePlaying()
     return;
   }
 
-  if (game.keysDown[' ']) {
-    spawnBullet();
-    game.keysDown[' '] = false;
-  }
-
-  var speed = game.player.speed * dt;
-  var move = 0;
-  if (game.keysDown[KEY_LEFT_ARROW])
-    move -= speed;
-  if (game.keysDown[KEY_RIGHT_ARROW])
-    move += speed;
-  var minX = 0;
-  var maxX = canvas.width - game.player.size[0];
-  game.player.pos[0] = clamp(minX, maxX, game.player.pos[0] + move);
+  updatePlayer(dt);
+  updateAliens(dt);
+  updateBullets(dt);
+  updateBombs(dt);
 }
 
 
@@ -365,11 +377,11 @@ function drawBarricades()
 
 function drawBullets()
 {
-  ctx.fillStyle = game.bulletColor;
+  ctx.fillStyle = game.bullets.color;
   for (var i = 0; i < game.numBullets; i++) {
     ctx.fillRect(
-        game.bulletPos[i][0], game.bulletPos[i][1],
-        game.bulletSize[0], game.bulletSize[1]
+        game.bullets.pos[i][0], game.bullets.pos[i][1],
+        game.bullets.size[0], game.bullets.size[1]
     );
   }
 }
@@ -377,10 +389,10 @@ function drawBullets()
 
 function drawBombs()
 {
-  ctx.fillStyle = game.bombColor;
+  ctx.fillStyle = game.bombs.color;
   for (var i = 0; i < game.numBombs; i++) {
     drawText("o", ICON_FONT_SIZE,
-        game.bombPos[i][0], game.bombPos[i][1],
+        game.bombs.pos[i][0], game.bombs.pos[i][1],
         ALIGN_LEFT, ALIGN_TOP, TITLE_FONT_NAME);
   }
 }
@@ -424,9 +436,9 @@ function spawnBullet()
     return;
 
   var i = game.numBullets;
-  game.bulletPos[i] = [ 0, 0 ];
-  game.bulletPos[i][0] = game.player.pos[0] + game.bulletXOfs;
-  game.bulletPos[i][1] = game.player.pos[1] - game.bulletYOfs;
+  game.bullets.pos[i] = [ 0, 0 ];
+  game.bullets.pos[i][0] = game.player.pos[0] + game.bullets.xOfs;
+  game.bullets.pos[i][1] = game.player.pos[1] - game.bullets.yOfs;
   game.numBullets++;
 }
 
@@ -436,8 +448,150 @@ function expireBullet(i)
   if (i >= game.numBullets)
     return;
   
-  game.bulletPos[i] = game.bulletPos[game.numBullets - 1];
+  game.bullets.pos[i] = game.bullets.pos[game.numBullets - 1];
   game.numBullets--;
+}
+
+
+function spawnBomb(alienIndex)
+{
+  var i = game.numBombs;
+  game.bombs.pos[i] = [ 0, 0 ];
+  game.bombs.pos[i][0] = game.aliens.pos[alienIndex][0];
+  game.bombs.pos[i][1] = game.aliens.pos[alienIndex][1];
+  game.numBombs++;
+
+  game.aliens.lastBombT = game.lastT;
+}
+
+
+function expireBomb(i)
+{
+  if (i >= game.numBombs)
+    return;
+
+  game.bombs.pos[i] = game.bombs.pos[game.numBombs - 1];
+  game.numBombs--;
+}
+
+
+//
+// Generic player and enemy logic
+//
+
+function updatePlayer(dt)
+{
+  if (game.keysDown[' ']) {
+    spawnBullet();
+    game.keysDown[' '] = false;
+  }
+
+  var speed = game.player.speed * dt;
+  var move = 0;
+  if (game.keysDown[KEY_LEFT_ARROW])
+    move -= speed;
+  if (game.keysDown[KEY_RIGHT_ARROW])
+    move += speed;
+  var minX = 0;
+  var maxX = canvas.width - game.player.size[0];
+  game.player.pos[0] = clamp(minX, maxX, game.player.pos[0] + move);
+}
+
+
+function updateAliens(dt)
+{
+  var lowX = game.aliens.pos[0][0];
+  var highX = lowX + game.aliens.size[0][0];
+  var lowY = game.aliens.pos[0][1] - game.aliens.size[0][1];
+  var highY = lowY + game.aliens.size[0][1];
+
+  for (var i = 1; i < game.numAliens; i++) {
+    var x = game.aliens.pos[i][0];
+    var y = game.aliens.pos[i][1] - game.aliens.size[i][1];
+    var x2 = x + game.aliens.size[i][0];
+    var y2 = y + game.aliens.size[i][1];
+
+    if (x < lowX)
+      lowX = x;
+    if (x2 > highX)
+      highX = x2;
+
+    if (y < lowY)
+      lowY = y;
+    if (y2 > highY)
+      highY = y2;
+  }
+
+  var minX = 0;
+  var maxX = canvas.width;
+  var nextRow = Math.floor(highY / game.aliens.cellHeight) + 1;
+  var nextRowY = nextRow * game.aliens.cellHeight;
+  
+  var moveDir = game.aliens.states[game.aliens.state];
+
+  var dx = 0;
+  var dy = 0;
+  if (moveDir == ALIEN_MOVE_LEFT) {
+    dx = game.aliens.speed * dt;
+    lowX -= dx;
+    if (lowX <= minX) {
+      dx -= (minX - lowX);
+      game.aliens.state = (game.aliens.state + 1) % game.aliens.states.length;
+    }
+    dx = -dx;
+  }
+  else if (moveDir == ALIEN_MOVE_RIGHT) {
+    dx = game.aliens.speed * dt;
+    highX += dx;
+    if (highX >= maxX) {
+      dx -= (highX - maxX);
+      game.aliens.state = (game.aliens.state + 1) % game.aliens.states.length;
+    }
+  }
+  else if (moveDir == ALIEN_MOVE_DOWN) {
+    dy = game.aliens.speed * dt;
+    highY += dy;
+    if (highY >= nextRowY) {
+      dy -= (highY - nextRowY);
+      game.aliens.state = (game.aliens.state + 1) % game.aliens.states.length;
+    }
+  }
+
+  for (var i = 0; i < game.numAliens; i++) {
+    game.aliens.pos[i][0] += dx;
+    game.aliens.pos[i][1] += dy;
+  }
+
+  moveDir = game.aliens.states[game.aliens.state];
+  var dtBomb = game.lastT - game.aliens.lastBombT;
+  if ((moveDir == ALIEN_MOVE_LEFT || moveDir == ALIEN_MOVE_RIGHT) && dtBomb > game.aliens.minBombDT) {
+    if (Math.random() < game.aliens.bombP) {
+      var i = Math.floor(Math.random() * game.numAliens);
+      spawnBomb(i);
+    }
+  }
+}
+
+
+function updateBullets(dt)
+{
+  var move = game.bullets.speed * dt;
+  for (var i = game.numBullets - 1; i >= 0; i--) {
+    game.bullets.pos[i][1] -= move;
+    if (game.bullets.pos[i][1] < -game.bullets.size[1])
+      expireBullet(i);
+  }
+}
+
+
+function updateBombs(dt)
+{
+  var move = game.bombs.speed * dt;
+  for (var i = game.numBombs - 1; i >= 0; i--) {
+    game.bombs.pos[i][1] += move;
+    if (game.bombs.pos[i][1] > canvas.height)
+      expireBomb(i);
+  }
 }
 
 
