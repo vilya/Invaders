@@ -80,7 +80,7 @@ var game = {
     'cellWidth': 0,
     'cellHeight': 0,
     'numPerRow': 0,
-    'speed': 64.0,      // pixels per second
+    'speed': 48.0,      // pixels per second
     'minBombDT': 1000,   // min time, in milliseconds, between dropping two bombs.
     'bombP': 0.5,       // probability of dropping a bomb on any given frame.
     'states': [ ALIEN_MOVE_LEFT, ALIEN_MOVE_DOWN, ALIEN_MOVE_RIGHT, ALIEN_MOVE_DOWN ],
@@ -103,7 +103,7 @@ var game = {
   'bullets': {
     'size': null,
     'color': "#990000",
-    'speed': 128.0, // pixels per second
+    'speed': 192.0, // pixels per second
     'xOfs': 0,
     'yOfs': 0,
     'pos': [],
@@ -114,7 +114,7 @@ var game = {
   'bombs': {
     'size': null,
     'color': "#999900",
-    'speed': 128.0, // pixels per second
+    'speed': 100.0, // pixels per second
     'xOfs': 0,
     'yOfs': 0,
     'pos': [],
