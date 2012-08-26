@@ -1,0 +1,55 @@
+First level:
+- a single alien ship flies back and forth across the screen until the player shoots it.
+
+Interlude:
+- alien #1: the humans shot down our trade envoy.
+- alien #1: this means war!
+- alien #2: wait - couldn't it have just been a misunderstanding?
+- alien #1: no one could be that stupid, not even humans.
+
+- several alien ships come on together and make a declaration of war
+
+Second level:
+- normal space invaders style, 16(?) enemies
+
+Interlude:
+- alien #1: we lost all our ships?
+- alien #2: this is an outrage!
+- alien #3: the only thing these humans seem to understand is force. we must strike harder!
+
+Third level:
+- normal space invaders style, full screen of enemies
+- some dialog while playing:
+  - die, human!
+  - soon you will be extinct!
+  - resistance is futile
+
+Interlude:
+- friendly alien: wait!
+- friendly alien: look... it doesn't have to be like this
+- friendly alien: not all of us agree with him      [friendly ships get marked in green now]
+- friendly alien: some of us are here under duress
+- friendly alien: we don't want to make anyone extinct
+- unfriendly alien: this... this is treason!
+- friendly alien: what you're making us do is wrong.
+- unfriendly alien: I'll have you all court-martialled!
+- unfriendly alien: attack!
+
+Fourth level:
+- shoot the unfriendly aliens, but don't shoot the friendly ones.
+- when there's a clear majority of friendly aliens, go to the 'peace talks' ending
+- if too many of the friendly aliens get wiped out, go to the 'extinction' ending
+
+Peace talks ending:
+- friendly alien: enough!
+- friendly alien: this madness cannot be allowed to continue!
+- friendly alien: human, we apologise for attacking your planet.
+- friendly alien: we would make peace with you, if you'll let us.
+- friendly alien: and we will punish those responsible for this attack.
+
+Extinction ending:
+- you: there's... there's too many of them!
+- you: they just keep coming!
+- you: nooooooooo......
+<silence>
+

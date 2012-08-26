@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>Invaders</title>
+
+    <style type="text/css" media="screen, print">
+      @font-face {
+        font-family: "Pixelate";
+        src: url("./font/04b_03/04B_03__.TTF");
+      }
+      @font-face {
+        font-family: "PixelInvaders";
+        src: url("./font/pixel_invaders/pixel_invaders.ttf");
+      }
+      body { font-family: "Pixelate", serif; }
+      canvas { font-family: "Pixelate", serif; }
+    </style>
+
+    <!-- Library which provides a seedable random number generator as a replacement for Math.random. -->
+    <script type="text/javascript" src="js/seedrandom.js"></script>
+
+    <!-- My code for this page. -->
+    <script type="text/javascript" src="main.js"></script>
+  </head>
+
+  <body onload="Invaders.main();">
+    <canvas id="draw-canvas" width="640" height="640"></canvas>
+  </body>
+</html>
