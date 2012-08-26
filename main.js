@@ -80,7 +80,7 @@ var game = {
     'cellWidth': 0,
     'cellHeight': 0,
     'numPerRow': 0,
-    'speed': 92.0,      // pixels per second
+    'speed': 64.0,      // pixels per second
     'minBombDT': 1000,   // min time, in milliseconds, between dropping two bombs.
     'bombP': 0.5,       // probability of dropping a bomb on any given frame.
     'states': [ ALIEN_MOVE_LEFT, ALIEN_MOVE_DOWN, ALIEN_MOVE_RIGHT, ALIEN_MOVE_DOWN ],
@@ -99,7 +99,7 @@ var game = {
 
   // Bullets (fired by the player)
   'numBullets': 0,
-  'maxBullets': 8,
+  'maxBullets': 12,
   'bullets': {
     'size': null,
     'color': "#990000",
@@ -223,7 +223,7 @@ function enterNewGame()
   // Set up the bombs.
   tw = ctx.measureText('o');
   game.numBombs = 0;
-  game.bombs.size = [ tw.width, ICON_FONT_SIZE ];
+  game.bombs.size = [ tw.width * 0.5, ICON_FONT_SIZE * 0.33 ];
   game.bombs.xOfs = (game.player.size[0] - game.bombs.size[0]) / 2;
   game.bombs.yOfs = game.bombs.size[1] / 2;
   game.bombs.pos = [];
@@ -256,10 +256,14 @@ function updatePlaying()
     return;
   }
 
-  updatePlayer(dt);
-  updateAliens(dt);
   updateBullets(dt);
   updateBombs(dt);
+
+  collisionTestBulletsToAliens();
+  collisionTestBombsToPlayer();
+
+  updatePlayer(dt);
+  updateAliens(dt);
 }
 
 
@@ -322,14 +326,6 @@ function updatePaused()
 }
 
 
-function drawLose()
-{
-  drawPlaying();
-  text(0.5, 0.25, 48, "you lose!");
-  text(0.5, 0.15, 24, "press <space> to continue");
-}
-
-
 //
 // Drawing functions
 //
@@ -383,9 +379,10 @@ function drawBombs()
 {
   ctx.fillStyle = game.bombs.color;
   for (var i = 0; i < game.numBombs; i++) {
-    drawText("o", ICON_FONT_SIZE,
+    ctx.fillRect(
         game.bombs.pos[i][0], game.bombs.pos[i][1],
-        ALIGN_LEFT, ALIGN_TOP, TITLE_FONT_NAME);
+        game.bombs.size[0], game.bombs.size[1]
+    );
   }
 }
 
@@ -422,6 +419,12 @@ function drawText(msg, size, x, y, halign, valign, fontname)
 // Spawning functions
 //
 
+function expirePlayer()
+{
+  changeState(game.states.lose);
+}
+
+
 function spawnRowOfAliens(shape, y)
 {
   ctx.font = ICON_FONT_SIZE + "px " + ICON_FONT_NAME;
@@ -436,6 +439,21 @@ function spawnRowOfAliens(shape, y)
     game.aliens.isFriendly.push(false);
     game.numAliens++;
   }
+}
+
+
+function expireAlien(i)
+{
+  if (i >= game.numAliens)
+    return;
+
+  var j = game.numAliens - 1;
+  game.aliens.shape[i] = game.aliens.shape[j];
+  game.aliens.size[i] = game.aliens.size[j];
+  game.aliens.pos[i] = game.aliens.pos[j];
+  game.aliens.color[i] = game.aliens.color[j];
+  game.aliens.isFriendly[i] = game.aliens.isFriendly[j];
+  game.numAliens--;
 }
 
 
@@ -600,6 +618,55 @@ function updateBombs(dt)
     game.bombs.pos[i][1] += move;
     if (game.bombs.pos[i][1] > canvas.height)
       expireBomb(i);
+  }
+}
+
+
+//
+// Collision testing and handling
+//
+
+function collisionTestBulletsToAliens()
+{
+  for (var a = game.numAliens - 1; a >= 0; a--) {
+    var aL = game.aliens.pos[a][0];
+    var aR = aL + game.aliens.size[a][0];
+    var aT = game.aliens.pos[a][1];
+    var aB = aT - game.aliens.size[a][1];
+
+    for (var b = game.numBullets - 1; b >= 0; b--) {
+      var bL = game.bullets.pos[b][0]; 
+      var bR = bL + game.bullets.size[0];
+      var bT = game.bullets.pos[b][1];
+      var bB = bT - game.bullets.size[1];
+
+      if (bL <= aR && bR >= aL && bB <= aT && bT >= aT) {
+        expireAlien(a);
+        expireBullet(b);
+      }
+    }
+  }
+}
+
+
+function collisionTestBombsToPlayer()
+{
+  var pL = game.player.pos[0];
+  var pR = pL + game.player.size[0];
+  var pT = game.player.pos[1];
+  var pB = pT - game.player.size[1];
+
+  for (var b = game.numBombs - 1; b >= 0; b--) {
+    var bL = game.bombs.pos[b][0]; 
+    var bR = bL + game.bombs.size[0];
+    var bT = game.bombs.pos[b][1];
+    var bB = bT - game.bombs.size[1];
+
+
+    if (bL <= pR && bR >= pL && bB <= pT && bT >= pT) {
+      expireBomb(b);
+      expirePlayer();
+    }
   }
 }
 
