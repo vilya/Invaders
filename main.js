@@ -202,19 +202,11 @@ function enterNewGame()
   game.aliens.lastBombT = game.lastT;
   game.aliens.state = 0;
 
-  game.numAliens = numRows * game.aliens.numPerRow;
+  game.numAliens = 0;
   y = (2 * canvas.height / 3);
   for (var row = 0; row < numRows; row++) {
     var shape = shapes[row];
-    tw = ctx.measureText(shape);
-    var xOfs = (game.aliens.cellWidth - tw.width) / 2;
-    for (var i = 1; i <= game.aliens.numPerRow; i++) {
-      game.aliens.shape.push(shape);
-      game.aliens.size.push([ tw.width, ICON_FONT_SIZE ]);
-      game.aliens.pos.push([ game.aliens.cellWidth * i + xOfs, y ]);
-      game.aliens.color.push("#FFFFFF");
-      game.aliens.isFriendly.push(false);
-    }
+    spawnRowOfAliens(shape, y);
     y -= game.aliens.cellHeight;
   }
 
@@ -429,6 +421,23 @@ function drawText(msg, size, x, y, halign, valign, fontname)
 //
 // Spawning functions
 //
+
+function spawnRowOfAliens(shape, y)
+{
+  ctx.font = ICON_FONT_SIZE + "px " + ICON_FONT_NAME;
+  tw = ctx.measureText(shape);
+
+  var xOfs = (game.aliens.cellWidth - tw.width) / 2;
+  for (var i = 1; i <= game.aliens.numPerRow; i++) {
+    game.aliens.shape.push(shape);
+    game.aliens.size.push([ tw.width, ICON_FONT_SIZE ]);
+    game.aliens.pos.push([ game.aliens.cellWidth * i + xOfs, y ]);
+    game.aliens.color.push("#FFFFFF");
+    game.aliens.isFriendly.push(false);
+    game.numAliens++;
+  }
+}
+
 
 function spawnBullet()
 {
