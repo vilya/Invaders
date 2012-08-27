@@ -72,6 +72,7 @@ var game = {
     'paused':     { 'draw': drawPaused,      'update': updatePaused },
   },
   'currentState': null,
+  'prevState': null,
 
   // Input handling.
   'keysDown': {},
@@ -160,6 +161,7 @@ function changeState(newState)
   // Change the state.
   if (game.currentState.leave)
     game.currentState.leave();
+  game.prevState = game.currentState;
   game.currentState = newState;
   if (game.currentState.enter)
     game.currentState.enter();
@@ -267,6 +269,8 @@ function updatePlaying(dt)
 
   collisionTestBulletsToAliens();
   collisionTestBombsToPlayer();
+  collisionTestAliensToPlayer();
+  collisionTestAliensToPlanet();
 
   updatePlayer(dt);
   updateAliens(dt);
@@ -516,29 +520,30 @@ function enterLevel3()
   resetAll();
 
   // Set up the scripted events.
+  var spawnGap = (game.aliens.cellWidth * 4 + game.aliens.cellHeight) / game.aliens.speed;
   game.states.level3.pendingEvents = [
     { 't': 0.5, 'enter': function(){ spawnRowOfAliens("A", 0); } },
-    { 't': 1.5, 'enter': function(){ spawnRowOfAliens("B", 0); } },
-    { 't': 2.5, 'enter': function(){ spawnRowOfAliens("C", 0); } },
-    { 't': 3.5, 'enter': function(){ spawnRowOfAliens("D", 0); } },
-    { 't': 4.0, 'd': 2.0,
+    { 't': 0.5 + 1 * spawnGap, 'enter': function(){ spawnRowOfAliens("B", 0); } },
+    { 't': 0.5 + 2 * spawnGap, 'enter': function(){ spawnRowOfAliens("C", 0); } },
+    { 't': 0.5 + 3 * spawnGap, 'enter': function(){ spawnRowOfAliens("D", 0); } },
+    { 't': 4 * spawnGap, 'd': 2.0,
       'draw': function () {
         drawDialogue("Die, human!", 0, 10, ALIGN_MIDDLE, ALIGN_TOP);
       }
     },
-    { 't': 4.5, 'enter': function(){ spawnRowOfAliens("A", 0); } },
-    { 't': 5.5, 'enter': function(){ spawnRowOfAliens("B", 0); } },
-    { 't': 6.5, 'enter': function(){ spawnRowOfAliens("C", 0); } },
-    { 't': 7.5, 'enter': function(){ spawnRowOfAliens("D", 0); } },
-    { 't': 8.0, 'd': 2.0,
+    { 't': 0.5 + 4 * spawnGap, 'enter': function(){ spawnRowOfAliens("A", 0); } },
+    { 't': 0.5 + 5 * spawnGap, 'enter': function(){ spawnRowOfAliens("B", 0); } },
+    { 't': 0.5 + 6 * spawnGap, 'enter': function(){ spawnRowOfAliens("C", 0); } },
+    { 't': 0.5 + 7 * spawnGap, 'enter': function(){ spawnRowOfAliens("D", 0); } },
+    { 't': 8 * spawnGap, 'd': 2.0,
       'draw': function () {
         drawDialogue("Soon you will be extinct!", 0, 10, ALIGN_MIDDLE, ALIGN_TOP);
       }
     },
-    { 't': 8.5, 'enter': function(){ spawnRowOfAliens("A", 0); } },
-    { 't': 9.5, 'enter': function(){ spawnRowOfAliens("B", 0); } },
-    { 't': 10.5,'enter': function(){ spawnRowOfAliens("C", 0); } },
-    { 't': 11.5,'enter': function(){ spawnRowOfAliens("D", 0); } },
+    { 't': 0.5 + 8 * spawnGap, 'enter': function(){ spawnRowOfAliens("A", 0); } },
+    { 't': 0.5 + 9 * spawnGap, 'enter': function(){ spawnRowOfAliens("B", 0); } },
+    { 't': 0.5 + 10 * spawnGap,'enter': function(){ spawnRowOfAliens("C", 0); } },
+    { 't': 0.5 + 11 * spawnGap,'enter': function(){ spawnRowOfAliens("D", 0); } },
   ];
 }
 
@@ -562,45 +567,49 @@ function updateInterlude3()
 function enterInterlude3()
 {
   // Set up everything.
-  game.player.canMove = false;
+  resetAll();
+  game.player.canMove = true;
   game.player.canFire = false;
   game.aliens.canFire = false;
-  game.aliens.canMove = false;
+  game.aliens.canMove = true;
 
   // Set up the scripted events.
   game.states.interlude3.pendingEvents = [
     { 't': 0.0, 'd': 1.0,
-      'draw': function () {
-        drawDialogue("Wait!", 0, 10, ALIGN_MIDDLE, ALIGN_TOP);
-      }
+      'enter': function () { spawnRowOfAliens('E', 0); },
+      'draw': function () { drawDialogue("Wait!", 0, 10, ALIGN_RIGHT, ALIGN_TOP); },
     },
     { 't': 1.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("Look... it doesn't have to be like this!", 0, 10, ALIGN_MIDDLE, ALIGN_TOP);
+        drawDialogue("Look... it doesn't have to be like this!", 0, 10, ALIGN_RIGHT, ALIGN_TOP);
       }
     },
     { 't': 3.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("Some of us would rather work this out peacefully.", 0, 10, ALIGN_MIDDLE, ALIGN_TOP);
+        drawDialogue("Some of us would rather work this out peacefully.", 0, 10, ALIGN_RIGHT, ALIGN_TOP);
       }
     },
-    { 't': 5.0, 'enter': function(){ game.aliens.showFriends = true; } },
+    { 't': 5.0,
+      'enter': function () { game.aliens.canMove = false; game.aliens.showFriends = true; }
+    },
     { 't': 6.0, 'd': 2.0,
+      'enter': function () { spawnAlien('H', canvas.width / 2, canvas.height / 2 - 100); },
       'draw': function () {
         drawDialogue("What?! This... this is treason!", 0, 10, ALIGN_MIDDLE, ALIGN_MIDDLE);
-      }
+      },
     },
     { 't': 8.0, 'd': 2.0,
       'draw': function () {
         drawDialogue("I'll have you all court martialled!", 0, 10, ALIGN_MIDDLE, ALIGN_MIDDLE);
-      }
+      },
     },
     { 't': 10.0, 'd': 2.0,
       'draw': function () {
         drawDialogue("Attack!", 0, 10, ALIGN_MIDDLE, ALIGN_MIDDLE);
-      }
+      },
     },
-    { 't': 11.0, 'enter': function () { changeState(game.states.level4); } },
+    { 't': 12.5, 'enter': function () { expireAlien(game.numAliens - 1); } },
+    { 't': 13.0, 'enter': function () { changeState(game.states.level4); } },
   ];
 }
 
@@ -618,27 +627,29 @@ function updateLevel4()
   game.lastT = t;
 
   // Check victory conditions.
-  var numFriendlies = 0;
-  var numHostiles = 0;
-  for (var i = 0; i < game.numAliens; i++) {
-    if (game.aliens.isFriendly[i])
-      numFriendlies++;
-    else
-      numHostiles++;
-  }
-  if (numFriendlies >= 2 * numHostiles) {
-    changeState(game.states.peaceTalks);
-    return;
-  }
-  else if (numHostiles >= 2 * numFriendlies) {
-    changeState(game.states.extinction);
-    return;
+  if (game.numAliensSpawned >= (game.aliens.numPerRow * 4)) {
+    var numFriendlies = 0;
+    for (var i = 0; i < game.numAliens; i++) {
+      if (game.aliens.isFriendly[i])
+        numFriendlies++;
+    }
+    var friendRatio = (numFriendlies - 0.0) / game.numAliens;
+    console.log('friendRatio = ' + friendRatio);
+    if (friendRatio >= 0.6) {
+      changeState(game.states.peaceTalks);
+      return;
+    }
+    else if (numHostiles >= 2 * numFriendlies) {
+      changeState(game.states.extinction);
+      return;
+    }
   }
 
   updatePlaying(dt);
 
   var dSpawnT = (game.lastT - game.states.level4.lastSpawnT) / 1000.0;
-  if (dSpawnT > 1.0) {
+  var spawnGap = (game.aliens.cellWidth * 4 + game.aliens.cellHeight) / game.aliens.speed;
+  if (dSpawnT > spawnGap) {
     spawnRowOfAliens("A", 0);
     game.states.level4.lastSpawnT = game.lastT;
   }
@@ -647,7 +658,22 @@ function updateLevel4()
 
 function enterLevel4()
 {
+  resetAll();
+  game.player.canMove = true;
+  game.player.canFire = true;
+  game.aliens.canFire = true;
+  game.aliens.canMove = true;
+  game.aliens.showFriends = true;
   game.states.level4.lastSpawnT = game.lastT;
+
+  // Set up the scripted events.
+  game.states.level4.pendingEvents = [
+    { 't': 0.0, 'd': 3.0,
+      'draw': function () {
+        drawDialogue("Green aliens are friendly - try not to shoot them!", 0, 10, ALIGN_MIDDLE, ALIGN_MIDDLE);
+      },
+    },
+  ];
 }
 
 
@@ -669,6 +695,8 @@ function updatePeaceTalks()
 
 function enterPeaceTalks()
 {
+  console.log('Peace Talks! Yay!');
+
   // Set up everything.
   game.player.canMove = false;
   game.player.canFire = false;
@@ -679,25 +707,35 @@ function enterPeaceTalks()
   game.states.peaceTalks.pendingEvents = [
     { 't': 0.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("Enough!!", 0, 10, ALIGN_LEFT, ALIGN_TOP);
+        drawDialogue("Enough!!", 10, 10, ALIGN_LEFT, ALIGN_TOP);
       }
     },
     { 't': 2.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("This madness must end.", 0, 10, ALIGN_LEFT, ALIGN_TOP);
+        drawDialogue("This madness must end.", 10, 10, ALIGN_LEFT, ALIGN_TOP);
       }
     },
     { 't': 4.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("Human, we apologise.", 0, 10, ALIGN_LEFT, ALIGN_TOP);
+        drawDialogue("Human, we apologise.", 10, 10, ALIGN_LEFT, ALIGN_TOP);
       }
     },
     { 't': 6.0, 'd': 2.0,
       'draw': function () {
-        drawDialogue("We would make peace with you, if you'll let us.", 0, 10, ALIGN_LEFT, ALIGN_TOP);
+        drawDialogue("We would make peace with you, if you'll let us.", 10, 10, ALIGN_LEFT, ALIGN_TOP);
       }
     },
-    { 't': 10.0, 'enter': function () { changeState(game.states.win); } },
+    { 't': 8.0, 'd': 2.0,
+      'draw': function () {
+        drawDialogue("...", 10, 10, ALIGN_LEFT, ALIGN_TOP);
+      }
+    },
+    { 't': 10.0, 'd': 2.0,
+      'draw': function () {
+        drawDialogue("What do you say...?", 10, 10, ALIGN_LEFT, ALIGN_TOP);
+      }
+    },
+    { 't': 12.0, 'enter': function () { changeState(game.states.win); } },
   ];
 }
 
@@ -727,6 +765,7 @@ function updateExtinction()
 
 function enterExtinction()
 {
+  console.log('Extinction! Noooo!');
   game.showFriends = false;
 }
 
@@ -734,6 +773,7 @@ function enterExtinction()
 function drawWin()
 {
   drawPlaying();
+  ctx.fillStyle = '#ffffff';
   drawText('You win!', TITLE_FONT_SIZE, 0, 0, ALIGN_MIDDLE, ALIGN_MIDDLE);
 }
 
@@ -753,6 +793,7 @@ function updateWin()
 function drawLose()
 {
   drawPlaying();
+  ctx.fillStyle = '#ffffff';
   drawText('You lose!', TITLE_FONT_SIZE, 0, 0, ALIGN_MIDDLE, ALIGN_MIDDLE);
 }
 
@@ -772,6 +813,7 @@ function updateLose()
 function drawPaused()
 {
   drawPlaying();
+  ctx.fillStyle = '#ffffff';
   drawText('paused', TITLE_FONT_SIZE, 0, 0, ALIGN_MIDDLE, ALIGN_MIDDLE);
 }
 
@@ -780,7 +822,7 @@ function updatePaused()
 {
   game.lastT = Date.now();
   if (anyKeyPressed())
-    changeState(game.states.playing);
+    changeState(game.prevState);
 }
 
 
@@ -790,7 +832,7 @@ function updatePaused()
 
 function drawBackground()
 {
-  ctx.fillStyle = "rgb(0, 0, 0);";
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -881,6 +923,7 @@ function drawIcon(icon, x, y)
 
 function drawDialogue(msg, x, y, halign, valign)
 {
+  ctx.fillStyle = "#990000";
   drawText(msg, DIALOGUE_FONT_SIZE, x, y, halign, valign, DIALOGUE_FONT_NAME);
 }
 
@@ -901,6 +944,8 @@ function spawnRowOfAliens(shape, y)
   tw = ctx.measureText(shape);
 
   var pFriendly = 0.4;
+
+  console.log('spawning new row');
 
   var xOfs = (game.aliens.cellWidth - tw.width) / 2;
   for (var i = 1; i <= game.aliens.numPerRow; i++) {
@@ -1051,7 +1096,7 @@ function resetAliens()
   game.aliens.isFriendly = [];
   game.aliens.lastBombT = game.lastT;
   game.aliens.canMove = true;
-  game.aliens.canFire = false;
+  game.aliens.canFire = true;
 }
 
 
@@ -1128,7 +1173,11 @@ function updateAliens(dt)
   canBomb = canBomb && (moveDir == ALIEN_MOVE_LEFT || moveDir == ALIEN_MOVE_RIGHT);
   if (canBomb) {
     if (Math.random() < game.aliens.bombP) {
-      var i = Math.floor(Math.random() * game.numAliens);
+      var i = (Math.floor(Math.random() * game.numAliens)) % game.numAliens;
+      if (game.aliens.showFriends) {
+        while (game.aliens.isFriendly[i])
+          i = (Math.floor(Math.random() * game.numAliens)) % game.numAliens;
+      }
       spawnBomb(i);
     }
   }
@@ -1271,6 +1320,43 @@ function collisionTestBombsToPlayer()
       expirePlayer();
     }
   }
+}
+
+
+function collisionTestAliensToPlayer()
+{
+  var pL = game.player.x;
+  var pR = pL + game.player.w;
+  var pT = game.player.y;
+  var pB = pT - game.player.h;
+
+  for (var a = game.numAliens - 1; a >= 0; a--) {
+    if (game.aliens.showFriends && game.aliens.isFriendly[a])
+      continue;
+
+    var aL = game.aliens.x[a];
+    var aR = aL + game.aliens.w[a];
+    var aT = game.aliens.y[a];
+    var aB = aT - game.aliens.h[a];
+
+    if (aT <= pB && aB >= pT && aL <= pR && aR >= pB) {
+      expireAlien(a);
+      expirePlayer();
+    }
+  }
+}
+
+
+function collisionTestAliensToPlanet()
+{
+  for (var i = 0; i < game.numAliens; i++) {
+    if (game.aliens.showFriends && game.aliens.isFriendly[i])
+      continue;
+
+    if (game.aliens.y[i] > canvas.height)
+      expirePlayer();
+  }
+
 }
 
 
