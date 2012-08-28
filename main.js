@@ -639,10 +639,6 @@ function updateLevel4()
       changeState(game.states.peaceTalks);
       return;
     }
-    else if (numHostiles >= 2 * numFriendlies) {
-      changeState(game.states.extinction);
-      return;
-    }
   }
 
   updatePlaying(dt);
