@@ -199,7 +199,7 @@ function drawNewGame()
 function updateNewGame()
 {
   game.lastT = Date.now();
-  changeState(game.states.level1);
+  changeState(game.states.level2);
 }
 
 
@@ -941,8 +941,6 @@ function spawnRowOfAliens(shape, y)
 
   var pFriendly = 0.4;
 
-  console.log('spawning new row');
-
   var xOfs = (game.aliens.cellWidth - tw.width) / 2;
   for (var i = 1; i <= game.aliens.numPerRow; i++) {
     game.aliens.shape.push(shape);
@@ -979,13 +977,12 @@ function expireAlien(i)
   if (i >= game.numAliens)
     return;
 
-  var j = game.numAliens - 1;
-  game.aliens.shape[i] = game.aliens.shape[j];
-  game.aliens.w[i] = game.aliens.w[j];
-  game.aliens.h[i] = game.aliens.h[j];
-  game.aliens.x[i] = game.aliens.x[j];
-  game.aliens.y[i] = game.aliens.y[j];
-  game.aliens.isFriendly[i] = game.aliens.isFriendly[j];
+  game.aliens.shape.splice(i, 1);
+  game.aliens.w.splice(i, 1);
+  game.aliens.h.splice(i, 1);
+  game.aliens.x.splice(i, 1);
+  game.aliens.y.splice(i, 1);
+  game.aliens.isFriendly.splice(i, 1);
   game.numAliens--;
 }
 
