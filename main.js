@@ -199,7 +199,7 @@ function drawNewGame()
 function updateNewGame()
 {
   game.lastT = Date.now();
-  changeState(game.states.level2);
+  changeState(game.states.level1);
 }
 
 
